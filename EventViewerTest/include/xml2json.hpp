@@ -91,17 +91,29 @@ void xml2json_to_array_form(const char *name, rapidjson::Value &jsvalue, rapidjs
     }
 }
 
-void xml2json_add_attributes(rapidxml::xml_node<> *xmlnode, rapidjson::Value &jsvalue, rapidjson::Document::AllocatorType& allocator)
+void xml2json_add_attributes(rapidxml::xml_node<> *xmlnode, rapidjson::Value &jsvalue, rapidjson::Document::AllocatorType& allocator, rapidjson::Value *dataValue = 0)
 {
     rapidxml::xml_attribute<> *myattr;
     for(myattr = xmlnode->first_attribute(); myattr; myattr = myattr->next_attribute())
     {
         rapidjson::Value jn, jv;
-        jn.SetString((std::string(xml2json_attribute_name_prefix) + myattr->name()).c_str(), allocator);
+        //if xmlnode->name is data and myattr name is Name, set jn string to myattr.value
+        if ((strcmp(xmlnode->name(), "Data") == 0) && (strcmp(myattr->name(), "Name") == 0))
+        {
+           jn.SetString((std::string(xml2json_attribute_name_prefix) + myattr->value()).c_str(), allocator);
+
+        }
+        //std::cout << "xmlnode Name " << xmlnode->name() << std::endl;
+        else
+        {
+           jn.SetString((std::string(xml2json_attribute_name_prefix) + myattr->name()).c_str(), allocator);
+        }
 
         if (xml2json_numeric_support == false)
         {
-            jv.SetString(myattr->value(), allocator);
+            jv.SetString(myattr->value(), allocator); 
+            std::cout << "name " << jn.GetString() << std::endl;
+            std::cout << "value " << jv.GetString() << std::endl << std::endl;
         }
         else
         {
@@ -124,7 +136,16 @@ void xml2json_add_attributes(rapidxml::xml_node<> *xmlnode, rapidjson::Value &js
                 }
             }
         }
-        jsvalue.AddMember(jn, jv, allocator);
+
+        //std::cout << jv.GetString() << std::endl;
+        if ((strcmp(xmlnode->name(), "Data") == 0) && (strcmp(myattr->name(), "Name") == 0))
+        {
+           jsvalue.AddMember(jn, *dataValue, allocator); 
+        }
+        else
+        {
+           jsvalue.AddMember(jn, jv, allocator); 
+        }
     }
 }
 
@@ -150,12 +171,21 @@ void xml2json_traverse_node(rapidxml::xml_node<> *xmlnode, rapidjson::Value &jsv
         {
             if(xmlnode->first_node() && xmlnode->first_node()->type() == rapidxml::node_data && count_children(xmlnode) == 1)
             {
-                // case: <e attr="xxx">text</e>
-                rapidjson::Value jn, jv;
-                jn.SetString(xml2json_text_additional_name, allocator);
+                // case: <e attr="xxx">text</e> 
+                // This is where we get the value of the Event Data MISO
+                std::cout << "From HeRE" << std::endl;
+                rapidjson::Value jn, jv; 
+                //jn.SetString(xml2json_text_additional_name, allocator);
                 jv.SetString(xmlnode->first_node()->value(), allocator);
-                jsvalue.AddMember(jn, jv, allocator);
-                xml2json_add_attributes(xmlnode, jsvalue, allocator);
+                //jsvalue.AddMember(jn, jv, allocator);
+                if (strcmp(xmlnode->name(), "Data") == 0)
+                {
+                   xml2json_add_attributes(xmlnode, jsvalue, allocator, &jv); 
+                }
+                else 
+                {
+                   xml2json_add_attributes(xmlnode, jsvalue, allocator); 
+                }
                 return;
             }
             else
@@ -225,6 +255,7 @@ void xml2json_traverse_node(rapidxml::xml_node<> *xmlnode, rapidjson::Value &jsv
                     name_count[current_name]++;
                     name_ptr = xmlnode_chd->name();
                 }
+                std::cout << "Node Name " << xmlnode_chd->name() << std::endl;
                 xml2json_traverse_node(xmlnode_chd, jsvalue_chd, allocator);
                 if(name_count[current_name] > 1 && name_ptr)
                     xml2json_to_array_form(name_ptr, jsvalue, jsvalue_chd, allocator);
