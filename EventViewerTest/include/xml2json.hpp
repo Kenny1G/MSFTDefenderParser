@@ -74,23 +74,36 @@ void xml2json_to_array_form(const char *name, rapidjson::Value &jsvalue, rapidjs
     jn.SetString(name, allocator);
     jsvalue_target = jsvalue.FindMember(name)->value;
     if(jsvalue_target.IsArray())
-    {
+    { 
         jsvalue_target.PushBack(jsvalue_chd, allocator);
         jsvalue.RemoveMember(name);
         jsvalue.AddMember(jn, jsvalue_target, allocator);
     }
     else
-    {
+    { 
         rapidjson::Value jsvalue_array;
-        //jsvalue_array = jsvalue_target;
+        //jsvalue_array = jsvalue_target; 
         jsvalue_array.SetArray();
         jsvalue_array.PushBack(jsvalue_target, allocator);
         jsvalue_array.PushBack(jsvalue_chd, allocator);
         jsvalue.RemoveMember(name);
         jsvalue.AddMember(jn, jsvalue_array, allocator);
-    }
+      }
 }
 
+void xml2json_truncate_data_json(const char *name, rapidjson::Value &jsvalue, rapidjson::Value &jsvalue_chd, rapidjson::Document::AllocatorType& allocator)
+{
+    rapidjson::Value jsvalue_target; // target to do some operation
+    rapidjson::Value jn;             // this is a must, partially because of the latest version of rapidjson
+    rapidjson::Value dataField;
+    jn.SetString(name, allocator);
+    jsvalue_target = jsvalue.FindMember(name)->value;
+
+    jsvalue.RemoveMember(name);
+    jsvalue_target.AddMember(jsvalue_chd.MemberBegin()->name, jsvalue_chd.MemberBegin()->value, allocator);
+    jsvalue.AddMember(jn, jsvalue_target, allocator);
+    
+}
 void xml2json_add_attributes(rapidxml::xml_node<> *xmlnode, rapidjson::Value &jsvalue, rapidjson::Document::AllocatorType& allocator, rapidjson::Value *dataValue = 0)
 {
     rapidxml::xml_attribute<> *myattr;
@@ -231,12 +244,16 @@ void xml2json_traverse_node(rapidxml::xml_node<> *xmlnode, rapidjson::Value &jsv
                     name_count[current_name]++;
                     name_ptr = xmlnode_chd->name();
                 }
+                //std::cout << xmlnode_chd->name() << std::endl;
                 xml2json_traverse_node(xmlnode_chd, jsvalue_chd, allocator);
                 if(name_count[current_name] > 1 && name_ptr)
+                (strcmp(xmlnode_chd->name(), "Data") == 0) ? 
+                    xml2json_truncate_data_json(name_ptr, jsvalue, jsvalue_chd, allocator) :
                     xml2json_to_array_form(name_ptr, jsvalue, jsvalue_chd, allocator);
                 else
                 {
                     jn.SetString(name_ptr, allocator);
+                    std::cout << name_ptr << std::endl;
                     jsvalue.AddMember(jn, jsvalue_chd, allocator);
                 }
             }
