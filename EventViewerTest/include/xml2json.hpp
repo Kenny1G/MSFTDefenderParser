@@ -74,7 +74,7 @@ void xml2json_to_array_form(const char *name, rapidjson::Value &jsvalue, rapidjs
     jn.SetString(name, allocator);
     jsvalue_target = jsvalue.FindMember(name)->value;
     if(jsvalue_target.IsArray())
-    { 
+    {
         jsvalue_target.PushBack(jsvalue_chd, allocator);
         jsvalue.RemoveMember(name);
         jsvalue.AddMember(jn, jsvalue_target, allocator);
@@ -88,7 +88,7 @@ void xml2json_to_array_form(const char *name, rapidjson::Value &jsvalue, rapidjs
         jsvalue_array.PushBack(jsvalue_chd, allocator);
         jsvalue.RemoveMember(name);
         jsvalue.AddMember(jn, jsvalue_array, allocator);
-      }
+     }
 }
 
 void xml2json_truncate_data_json(const char *name, rapidjson::Value &jsvalue, rapidjson::Value &jsvalue_chd, rapidjson::Document::AllocatorType& allocator)
@@ -113,7 +113,6 @@ void xml2json_add_attributes(rapidxml::xml_node<> *xmlnode, rapidjson::Value &js
         ((strcmp(xmlnode->name(), "Data") == 0) && (strcmp(myattr->name(), "Name") == 0)) ?
            jn.SetString((std::string(xml2json_attribute_name_prefix) + myattr->value()).c_str(), allocator) : 
            jn.SetString((std::string(xml2json_attribute_name_prefix) + myattr->name()).c_str(), allocator);
-        
 
         if (xml2json_numeric_support == false)
         {
@@ -139,10 +138,10 @@ void xml2json_add_attributes(rapidxml::xml_node<> *xmlnode, rapidjson::Value &js
                     jv.SetInt(value);
                 }
             }
-        } 
+        }
         ((strcmp(xmlnode->name(), "Data") == 0) && (strcmp(myattr->name(), "Name") == 0)) ?
            jsvalue.AddMember(jn, *dataValue, allocator) :
-           jsvalue.AddMember(jn, jv, allocator); 
+           jsvalue.AddMember(jn, jv, allocator);
     }
 }
 
@@ -244,7 +243,6 @@ void xml2json_traverse_node(rapidxml::xml_node<> *xmlnode, rapidjson::Value &jsv
                     name_count[current_name]++;
                     name_ptr = xmlnode_chd->name();
                 }
-                //std::cout << xmlnode_chd->name() << std::endl;
                 xml2json_traverse_node(xmlnode_chd, jsvalue_chd, allocator);
                 if(name_count[current_name] > 1 && name_ptr)
                 (strcmp(xmlnode_chd->name(), "Data") == 0) ? 
@@ -253,7 +251,8 @@ void xml2json_traverse_node(rapidxml::xml_node<> *xmlnode, rapidjson::Value &jsv
                 else
                 {
                     jn.SetString(name_ptr, allocator);
-                    std::cout << name_ptr << std::endl;
+                    (strcmp(name_ptr, "EventData") == 0) ? 
+                    jsvalue.AddMember(jn, jsvalue_chd.MemberBegin()->value, allocator):
                     jsvalue.AddMember(jn, jsvalue_chd, allocator);
                 }
             }
