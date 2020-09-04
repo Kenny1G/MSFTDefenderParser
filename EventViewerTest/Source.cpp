@@ -12,15 +12,7 @@
 
 DWORD PrintResults(EVT_HANDLE hResults);
 DWORD PrintEvent(EVT_HANDLE hEvent, FILE* jsonFile); // Shown in the Rendering Events topic
-LPWSTR GetMessageString(EVT_HANDLE hMetadata, EVT_HANDLE hEvent, EVT_FORMAT_MESSAGE_FLAGS FormatId);
-
-
-#define QUERY \
-    L"<QueryList>" \
-    L"   <Query Id = '0' Path = 'Microsoft-Windows-Windows Defender/Operational'>" \
-    L"      <Select Path = 'Microsoft-Windows-Windows Defender/Operational'>*</Select>" \
-    L"   </Query>" \
-    L"</QueryList>"
+LPWSTR GetMessageString(EVT_HANDLE hMetadata, EVT_HANDLE hEvent, EVT_FORMAT_MESSAGE_FLAGS FormatId); 
 
 #define PROVNAME \
    L"Microsoft-Windows-Windows Defender"
@@ -30,7 +22,6 @@ void main(void)
    DWORD status = ERROR_SUCCESS;
    EVT_HANDLE hResults = NULL;
    LPCWSTR pwsPath = L"Microsoft-Windows-Windows Defender/Operational";
-   //LPCWSTR pwsQuery = L"Event/System[EventID=4]";
    LPCWSTR pwsQuery = L"*[System[(Level = 1 or Level = 2 or Level = 3 or Level = 5)]]";
    
 
