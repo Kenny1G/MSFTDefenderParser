@@ -9,6 +9,8 @@
 #include <string>
 #include <cctype>
 
+#include <unordered_map>
+
 #include "rapidxml/rapidxml.hpp"
 #include "rapidxml/rapidxml_utils.hpp"
 #include "rapidxml/rapidxml_print.hpp"
@@ -23,13 +25,17 @@
 #include "rapidjson/filewritestream.h"
 #include "rapidjson/error/en.h"
 
+
+#include "DLLReader.hpp"
+static std::unordered_map<DWORD, std::string> message_map;
+
 /* [Start] This part is configurable */
 static const char xml2json_text_additional_name[] = "#text";
 static const char xml2json_attribute_name_prefix[] = "@";
 /* Example:
    <node_name attribute_name="attribute_value">value</node_name> ---> "node_name":{"#text":"value","@attribute_name":"attribute_value"}
 */
-static const bool xml2json_numeric_support = false;
+static const bool xml2json_numeric_support = true;
 /* Example:
    xml2json_numeric_support = false:
    <number>26.026</number>  ---> "number":"26.026"
@@ -38,7 +44,7 @@ static const bool xml2json_numeric_support = false;
 */
 /* [End]   This part is configurable */
 
-// Avoided any namespace pollution.
+ // Avoided any namespace pollution.
 static bool xml2json_has_digits_only(const char * input, bool *hasDecimal)
 {
     if (input == nullptr)
@@ -169,7 +175,23 @@ void xml2json_traverse_node(rapidxml::xml_node<> *xmlnode, rapidjson::Value &jsv
                 // case: <e attr="xxx">text</e>
                 rapidjson::Value jn, jv;
                 //jn.SetString(xml2json_text_additional_name, allocator);
-                jv.SetString(xmlnode->first_node()->value(), allocator);
+                std::string value = xmlnode->first_node()->value();
+                if (strncmp(value.c_str(), "%%", 2) == 0)
+                {
+                   DWORD id;
+                   std::string idStr = value.substr(2);
+                   id = strtoul(idStr.c_str(), NULL, 0);
+                   std::string message = message_map[id].c_str();
+                   std::size_t pos = message.find("%0");
+                   if (pos == std::string::npos)
+                      pos = message.find("\r");
+                   message = message.substr(0, pos);
+                   jv.SetString(message.c_str(), allocator);
+                }
+                else
+                {
+                   jv.SetString(value.c_str(), allocator);
+                }
                 //jsvalue.AddMember(jn, jv, allocator);
                 (strcmp(xmlnode->name(), "Data") == 0) ? 
                    xml2json_add_attributes(xmlnode, jsvalue, allocator, &jv) :
@@ -266,6 +288,8 @@ void xml2json_traverse_node(rapidxml::xml_node<> *xmlnode, rapidjson::Value &jsv
 
 std::string xml2json(const char *xml_str)
 {
+   readDLL(message_map);
+
     //file<> fdoc("track_orig.xml"); // could serve another use case
     rapidxml::xml_document<> *xml_doc = new rapidxml::xml_document<>();
     xml_doc->parse<0> (const_cast<char *>(xml_str));

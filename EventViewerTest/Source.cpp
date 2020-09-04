@@ -11,7 +11,7 @@
 #define TIMEOUT 1000  // 1 second; Set and use in place of INFINITE in EvtNext call
 
 DWORD PrintResults(EVT_HANDLE hResults);
-DWORD PrintEvent(EVT_HANDLE hEvent); // Shown in the Rendering Events topic
+DWORD PrintEvent(EVT_HANDLE hEvent, FILE* jsonFile); // Shown in the Rendering Events topic
 LPWSTR GetMessageString(EVT_HANDLE hMetadata, EVT_HANDLE hEvent, EVT_FORMAT_MESSAGE_FLAGS FormatId);
 
 
@@ -67,7 +67,10 @@ DWORD PrintResults(EVT_HANDLE hResults)
    DWORD status = ERROR_SUCCESS;
    EVT_HANDLE hEvents[ARRAY_SIZE];
    DWORD dwReturned = 0;
-   //FILE* jsonFile = fopen("C:\ProgramData\BHN\output.json", "w");
+   FILE* jsonFile;
+   errno_t err = fopen_s(&jsonFile, "C:\\ProgramData\\BHN\\output.json", "w");
+   if (0 != err) printf("Fileopen failed");
+   fprintf(jsonFile, "[");
 
    while (true)
    {
@@ -82,30 +85,20 @@ DWORD PrintResults(EVT_HANDLE hResults)
          goto cleanup;
       }
 
-      if (ERROR_SUCCESS == (status = PrintEvent(hEvents[0])))
-      {
-         EvtClose(hEvents[0]);
-         hEvents[0] = NULL;
-      }
-      else
-      {
-         goto cleanup;
-      }
-
       // For each event, call the PrintEvent function which renders the
       // event for display. PrintEvent is shown in RenderingEvents.
-      //for (DWORD i = 0; i < dwReturned; i++)
-      //{
-      //   if (ERROR_SUCCESS == (status = PrintEvent(hEvents[i])))
-      //   {
-      //      EvtClose(hEvents[i]);
-      //      hEvents[i] = NULL;
-      //   }
-      //   else
-      //   {
-      //      goto cleanup;
-      //   }
-      //}
+      for (DWORD i = 0; i < dwReturned; i++)
+      {
+         if (ERROR_SUCCESS == (status = PrintEvent(hEvents[i], jsonFile)))
+         {
+            EvtClose(hEvents[i]);
+            hEvents[i] = NULL;
+         }
+         else
+         {
+            goto cleanup;
+         }
+      }
    }
 
 cleanup:
@@ -115,12 +108,14 @@ cleanup:
       if (NULL != hEvents[i])
          EvtClose(hEvents[i]);
    }
+   fprintf(jsonFile, "{\"Event\":null}]");
+   fclose(jsonFile);
 
    return status;
 }
 
 
-DWORD PrintEvent(EVT_HANDLE hEvent)
+DWORD PrintEvent(EVT_HANDLE hEvent, FILE* jsonFile)
 {
    DWORD status = ERROR_SUCCESS;
    DWORD dwBufferSize = 0;
@@ -130,9 +125,8 @@ DWORD PrintEvent(EVT_HANDLE hEvent)
    LPWSTR pwsMessage = NULL;
    EVT_HANDLE hProviderMetadata = NULL;
 
-   LPWSTR pwszPublisherName = L"Microsoft-Windows-Windows Defender";
 
-   hProviderMetadata = EvtOpenPublisherMetadata(NULL, pwszPublisherName, NULL, 0, 0);
+   hProviderMetadata = EvtOpenPublisherMetadata(NULL, PROVNAME, NULL, 0, 0);
    if (NULL == hProviderMetadata)
    {
       wprintf(L"EvtOpenPublisherMetadata failed with %d\n", GetLastError());
@@ -150,12 +144,13 @@ DWORD PrintEvent(EVT_HANDLE hEvent)
       int size_needed = WideCharToMultiByte(CP_UTF8, 0, &pwsMessage[0], msgLen, NULL, 0, NULL, NULL);
       std::string strTo(size_needed, 0);
       WideCharToMultiByte(CP_UTF8, 0, &pwsMessage[0], msgLen, &strTo[0], size_needed, NULL, NULL);
-      printf("%s \n\n\n\n", strTo.c_str());
+      //printf("%s \n\n\n\n", strTo.c_str());
+
       std::ostringstream oss;
       oss.str("");
       oss << strTo;
       std::string  json_str = xml2json(oss.str().data());
-      printf("%s \n\n", json_str.c_str());
+      fprintf(jsonFile, "%s,\n", json_str.c_str());
    }
 
   
