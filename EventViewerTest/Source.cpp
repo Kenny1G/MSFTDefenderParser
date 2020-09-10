@@ -60,7 +60,7 @@ DWORD PrintResults(EVT_HANDLE hResults)
    DWORD dwReturned = 0;
    FILE* jsonFile;
    errno_t err = fopen_s(&jsonFile, "C:\\ProgramData\\BHN\\output.json", "w");
-   if (0 != err) printf("Fileopen failed");
+   if (0 != err) printf("File open failed");
    fprintf(jsonFile, "[");
 
    while (true)
@@ -135,7 +135,7 @@ DWORD PrintEvent(EVT_HANDLE hEvent, FILE* jsonFile)
       int size_needed = WideCharToMultiByte(CP_UTF8, 0, &pwsMessage[0], msgLen, NULL, 0, NULL, NULL);
       std::string strTo(size_needed, 0);
       WideCharToMultiByte(CP_UTF8, 0, &pwsMessage[0], msgLen, &strTo[0], size_needed, NULL, NULL);
-      //printf("%s \n\n\n\n", strTo.c_str());
+      printf("%s \n\n\n\n", strTo.c_str());
 
       std::ostringstream oss;
       oss.str("");

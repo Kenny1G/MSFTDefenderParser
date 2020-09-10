@@ -145,9 +145,21 @@ void xml2json_add_attributes(rapidxml::xml_node<> *xmlnode, rapidjson::Value &js
                 }
             }
         }
-        ((strcmp(xmlnode->name(), "Data") == 0) && (strcmp(myattr->name(), "Name") == 0)) ?
-           jsvalue.AddMember(jn, *dataValue, allocator) :
+        if ((strcmp(xmlnode->name(), "Data") == 0) && (strcmp(myattr->name(), "Name") == 0))
+        {
+           if (dataValue == NULL)
+           {
+              jsvalue.AddMember(jn, "null", allocator);
+           }
+           else
+           {
+              jsvalue.AddMember(jn, *dataValue, allocator); 
+           }
+        }
+        else
+        {
            jsvalue.AddMember(jn, jv, allocator);
+        }
     }
 }
 
